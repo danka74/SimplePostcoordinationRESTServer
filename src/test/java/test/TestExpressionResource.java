@@ -16,12 +16,12 @@ import org.restlet.data.Method;
 import org.restlet.representation.Representation;
 import org.restlet.resource.ClientResource;
 
-import se.liu.imt.mi.snomedct.simplepcserver.SimplePostcoordinationServerResource;
+import se.liu.imt.mi.snomedct.simplepcserver.SimplePostcoordinationApplication;
 
 public class TestExpressionResource {
 	
 	private static final Logger log = Logger
-			.getLogger(SimplePostcoordinationServerResource.class);
+			.getLogger(SimplePostcoordinationApplication.class);
 	private static Configuration config = null;
 
 	@BeforeClass
@@ -35,14 +35,14 @@ public class TestExpressionResource {
 			throw e;
 		}
 		
-		SimplePostcoordinationServerResource.main(new String[] {});
+		SimplePostcoordinationApplication.main(new String[] {});
 		
 		log.info("Started server");
 	}
 
 	@Test
 	public void test1TestSyntaxError() throws IOException {
-		String url = "http://localhost:" + config.getString("server.port", "8184");
+		String url = "http://localhost:" + config.getString("server.port", "8184") + "/check";
 		ClientResource clientResource = new ClientResource(url);
 		clientResource.accept(MediaType.APPLICATION_JSON);
 		Form form = new Form();
@@ -58,7 +58,7 @@ public class TestExpressionResource {
 	
 	@Test
 	public void test2TestCorrectSyntax() throws IOException {
-		String url = "http://localhost:" + config.getString("server.port", "8184");
+		String url = "http://localhost:" + config.getString("server.port", "8184") + "/check";
 		ClientResource clientResource = new ClientResource(url);
 		clientResource.accept(MediaType.APPLICATION_JSON);
 		Form form = new Form();

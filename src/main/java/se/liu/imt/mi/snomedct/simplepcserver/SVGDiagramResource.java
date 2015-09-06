@@ -1,82 +1,73 @@
 package se.liu.imt.mi.snomedct.simplepcserver;
 
-/**
- *
- */
-
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.log4j.Logger;
-import org.restlet.Application;
-import org.restlet.Component;
-import org.restlet.Context;
+import org.coode.owlapi.turtle.TurtleOntologyFormat;
 import org.restlet.Request;
 import org.restlet.Response;
-import org.restlet.Restlet;
-import org.restlet.Server;
 import org.restlet.data.Form;
-import org.restlet.data.Header;
 import org.restlet.data.MediaType;
 import org.restlet.data.Method;
-import org.restlet.data.Protocol;
 import org.restlet.data.Status;
-import org.restlet.engine.adapter.HttpResponse;
-import org.restlet.engine.header.HeaderConstants;
 import org.restlet.representation.Representation;
 import org.restlet.representation.StringRepresentation;
+import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.Options;
 import org.restlet.resource.Post;
+import org.restlet.resource.Put;
 import org.restlet.resource.ServerResource;
-import org.restlet.routing.Router;
-import org.restlet.util.Series;
-import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.io.StringDocumentTarget;
+import org.semanticweb.owlapi.model.AxiomType;
+import org.semanticweb.owlapi.model.ClassExpressionType;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLAxiom;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLClassExpression;
+import org.semanticweb.owlapi.model.OWLEquivalentClassesAxiom;
 import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLOntologyFormat;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.model.OWLOntologyStorageException;
+import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 
-public class SimplePostcoordinationServerResource extends ServerResource {
+import se.liu.imt.mi.snomedct.expression.tools.ExpressionSyntaxError;
+import se.liu.imt.mi.snomedct.expression.tools.SNOMEDCTParserUtil;
+import se.liu.imt.mi.snomedct.parser.SVGPart;
+import se.liu.imt.mi.snomedct.parser.SVGVisitor;
 
-	private static final Logger log = Logger
-			.getLogger(SimplePostcoordinationServerResource.class);
-	private static Configuration config = null;
+public class SVGDiagramResource extends ServerResource {
 
-	public static void main(String[] args) throws Exception {
-
-		// initialize configuration
-		try {
-			config = new XMLConfiguration("config.xml");
-			log.debug("Configuration in 'config.xml' loaded");
-		} catch (Exception e) {
-			log.debug("Exception", e);
-			throw e;
-		}
-
-		new Server(Protocol.HTTP, config.getInt("server.port"),
-				SimplePostcoordinationServerResource.class).start();
-
-	}
+	private static Logger log = Logger.getLogger(SVGDiagramResource.class);
 
 	@Options
 	public Response _options() {
 		Response response = getResponse();
 		response.setAccessControlAllowOrigin("*");
-		response.setAccessControlAllowMethods(new HashSet<Method>(Arrays.asList(Method.POST, Method.OPTIONS)));
+		response.setAccessControlAllowMethods(new HashSet<Method>(Arrays
+				.asList(Method.POST, Method.OPTIONS)));
 		return response;
 	}
 
-	@Post("application/json")
-	public Representation check_expression(Representation entity) {
+	@Post()
+	public Representation getGraph(Representation entity) {
 
 		Response response = getResponse();
 		response.setAccessControlAllowOrigin("*");
-		response.setAccessControlAllowMethods(new HashSet<Method>(Arrays.asList(Method.POST, Method.OPTIONS)));
+		response.setAccessControlAllowMethods(new HashSet<Method>(Arrays
+				.asList(Method.POST, Method.OPTIONS)));
 
 		Form form = new Form(entity);
 		String expression = form.getFirstValue("expression");
@@ -93,8 +84,13 @@ public class SimplePostcoordinationServerResource extends ServerResource {
 			else
 				tree = se.liu.imt.mi.snomedct.expression.tools.SNOMEDCTParserUtil
 						.parseExpression(expression);
-			return new StringRepresentation("{\"status\": \"ok\"}",
-					MediaType.APPLICATION_JSON);
+			
+			SVGVisitor visitor = new SVGVisitor();
+
+			SVGPart result = visitor.visit(tree);
+			
+			return new StringRepresentation(result.getSVG(),
+					MediaType.IMAGE_SVG);
 		} catch (Exception e) {
 			Pattern pattern = Pattern.compile("^line (\\d+), pos (\\d+)");
 			String message = e.getCause().getMessage();
