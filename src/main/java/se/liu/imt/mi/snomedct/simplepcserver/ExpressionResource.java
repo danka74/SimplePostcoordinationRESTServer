@@ -42,22 +42,68 @@ public class ExpressionResource extends ServerResource {
 	private static Logger log = Logger.getLogger(ExpressionResource.class);
 
 	@Post()
-	public String check_expression(Representation entity) {
+	public String add_expression(Representation entity) {
 
-		Form form = new Form(entity);
+		OWLOntology ontology = (OWLOntology) getContext().getAttributes().get(
+				"ontology");
+		
+		Form form = new Form(entity); 
 		String expression = form.getFirstValue("expression");
 		if(expression == null) {
 			getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
 			return "";
 		}
 
+		OWLAxiom axiom = null;
 		try {
-
+			axiom = SNOMEDCTParserUtil.parseExpressionToOWLAxiom(expression,
+					ontology);
+		} catch (ExpressionSyntaxError e) {
+			return e.toString();
 		}
-		catch(Exception e) {
 
+		IRI iri = null;
+		if (axiom.getAxiomType() == AxiomType.SUBCLASS_OF) {
+			iri = ((OWLSubClassOfAxiom) axiom).getSubClass().asOWLClass()
+					.getIRI();
+		} else if (axiom.getAxiomType() == AxiomType.EQUIVALENT_CLASSES) {
+			List<OWLClassExpression> classExpressionList = ((OWLEquivalentClassesAxiom) axiom)
+					.getClassExpressionsAsList();
+			for(OWLClassExpression classExpression : classExpressionList) {
+				if(classExpression.getClassExpressionType() == ClassExpressionType.OWL_CLASS)
+					iri = classExpression.asOWLClass().getIRI();
+			}
 		}
-		return "";
+		return iri.toString();
+	}
+
+	@Delete()
+	public String delete_expression(Representation entity) throws IOException {
+
+		OWLOntology ontology = (OWLOntology) getContext().getAttributes().get(
+				"ontology");
+		OWLOntologyManager manager = ontology.getOWLOntologyManager();
+
+		String expression = getQuery().getQueryString();
+		expression = URLDecoder.decode(expression, "UTF-8");
+		
+		IRI iri = IRI.create(expression);
+		OWLClass owlClass = manager.getOWLDataFactory().getOWLClass(iri);
+
+		boolean found = false;
+		for(OWLAxiom axiom : ontology.getAxioms()) {
+			Set<OWLClass> classes = axiom.getClassesInSignature();
+			if(classes.contains(owlClass)) {
+				manager.removeAxiom(ontology, axiom);
+				found = true;
+				break;
+			}
+		}
+		
+		if(!found)
+			getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND);
+
+		return expression;
 	}
 
 }
