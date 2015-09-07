@@ -33,7 +33,7 @@
 					</descriptorRefs>
 					<archive>
 						<manifest>
-							<mainClass>se.liu.imt.mi.snomedct.expression.tools.SNOMEDCTTranslator</mainClass>
+							<mainClass>se.liu.imt.mi.snomedct.simplepcserver.SimplePostcoordinationApplication</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
