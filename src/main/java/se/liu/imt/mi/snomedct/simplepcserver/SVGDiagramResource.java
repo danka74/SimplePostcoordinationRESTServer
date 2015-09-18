@@ -6,6 +6,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -64,6 +65,10 @@ public class SVGDiagramResource extends ServerResource {
 	@Post()
 	public Representation getGraph(Representation entity) {
 
+		@SuppressWarnings("unchecked")
+		HashMap<Long, Boolean> concepts = (HashMap<Long, Boolean>) getContext()
+				.getAttributes().get("concepts");
+
 		Response response = getResponse();
 		response.setAccessControlAllowOrigin("*");
 		response.setAccessControlAllowMethods(new HashSet<Method>(Arrays
@@ -84,11 +89,11 @@ public class SVGDiagramResource extends ServerResource {
 			else
 				tree = se.liu.imt.mi.snomedct.expression.tools.SNOMEDCTParserUtil
 						.parseExpression(expression);
-			
-			SVGVisitor visitor = new SVGVisitor();
+
+			SVGVisitor visitor = new SVGVisitor(concepts, false);
 
 			SVGPart result = visitor.visit(tree);
-			
+
 			return new StringRepresentation(result.getSVG(),
 					MediaType.IMAGE_SVG);
 		} catch (Exception e) {

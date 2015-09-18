@@ -3,4 +3,7 @@
     <server>
         <port>8184</port>
     </server>
+    <snomed>
+    	<snomed-file>/home/danka74/Documents/SCT/SnomedCT_RF2Release_INT_20150131/Snapshot/Terminology/sct2_Concept_Snapshot_INT_20150131.txt</snomed-file>
+    </snomed>
 </configuration>
